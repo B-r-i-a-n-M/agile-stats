@@ -1,0 +1,53 @@
+﻿,Key,Type,Points,Current Status,Status ID @ End,Stats Result,Is Unplanned,Reason
+0,BUG-1527,Bug,2,Not a Bug,10044,Completed,false,Planned
+1,BUG-1859,Bug,2,Triaged,10043,Status not Done @ End,false,Planned
+2,SP-3248,Story,4,Ready for QA,10060,Status not Done @ End,false,Planned
+3,SP-2882,Story,6,Ready to Release,1,Status not Done @ End,false,Planned
+4,BUG-1814,Bug,1,Triaged,10060,Status not Done @ End,false,Planned
+5,BUG-1969,Bug,1,Triaged,10060,Status not Done @ End,true,Created after start
+6,SP-3106,Scoping,2,Open,1,Status not Done @ End,false,Planned
+7,SP-4756,Task,2,In Development,10053,Status not Done @ End,false,Planned
+8,BUG-1929,Bug,1,Released,10057,Completed Outside,false,Planned
+9,BUG-1326,Bug,1,Aged Closed,10052,Completed,false,Planned
+10,BUG-1996,Bug,1,Released,10057,Completed,true,Created after start
+11,BUG-1985,Bug,0.5,Released,10057,Completed,true,Created after start
+12,SP-4772,Testing Issue (Task),0.5,Verified & Closed,10063,Completed Outside,false,Planned
+13,SP-4801,Testing Issue (Task),0.5,Cancelled,10005,Completed Outside,false,Planned
+14,DT-1934,Task,3,Cancelled,10005,Completed,false,Planned
+15,DT-1948,Task,1,Data Import Completed,10051,Completed,true,Created after start
+16,BUG-1900,Bug,2,Reopened,10002,Completed,true,Added at 2025-10-02 13:12:18.625000+10:00
+17,SP-4907,Task,1,Cancelled,10003,Status not Done @ End,false,Planned
+18,SP-4901,Task,2,Cancelled,10002,Completed,false,Planned
+19,SP-4965,Task,1,Merged to Release Branch,10059,Completed,true,Created after start
+20,SP-3198,Task,0.5,Done,10013,Completed,false,Planned
+21,SP-4983,Task,1,Done,10013,Completed,true,Created after start
+22,BUG-1831,Bug,2,Released,10060,Status not Done @ End,false,Planned
+23,SP-3499,Testing Issue (Task),3,Verified & Closed,10060,Status not Done @ End,false,Planned
+24,SP-4966,Task,2,Merged to Release Branch,10059,Completed,true,Created after start
+25,AO-310,Scoping,3,Done,10013,Completed,false,Planned
+26,AO-317,Task,2,Done,10013,Completed,true,Created after start
+27,SP-2889,Story,1,Released,10053,Status not Done @ End,false,Planned
+28,BUG-1874,Bug,2,Released,10060,Status not Done @ End,false,Planned
+29,SP-4913,Task,8,Done,10013,Completed,false,Planned
+30,SP-4869,Task,7,Done,10013,Completed,false,Planned
+31,SP-4885,Task,4,Done,10013,Completed,false,Planned
+32,SP-4879,Task,5,Done,10053,Status not Done @ End,false,Planned
+33,SP-4936,Task,2,Done,10013,Completed,false,Planned
+34,SP-4873,Task,4.5,Done,10013,Completed,false,Planned
+35,SP-5003,Task,1,Merged to Release Branch,10002,Completed,true,Created after start
+36,SP-4938,Task,1.5,Merged to Release Branch,10059,Completed,false,Planned
+37,SP-5006,Task,3,Done,10013,Completed,true,Created after start
+38,BUG-1913,Bug,2,Released,10057,Completed,false,Planned
+39,BUG-1319,Bug,1,Released,10057,Completed,false,Planned
+40,BUG-1881,Bug,2,Released,10057,Completed,false,Planned
+41,BUG-1933,Bug,2,Released,10057,Completed,false,Planned
+42,BUG-1906,Bug,2,Released,10043,Status not Done @ End,false,Planned
+43,SP-4899,Task,1,Merged to Release Branch,10059,Completed,true,Added at 2025-10-02 09:38:28.049000+10:00
+44,BUG-1971,Bug,1,Released,10057,Completed,true,Created after start
+45,SP-5004,Bug,1,Verified & Closed,10063,Completed,true,Created after start
+46,BUG-1912,Bug,3,Released,10057,Completed,true,Added at 2025-10-03 13:31:33.666000+10:00
+47,BUG-1979,Bug,1,Cancelled,10005,Completed,true,Created after start
+48,BUG-1461,Bug,1,Released,10043,Status not Done @ End,false,Planned
+49,SP-5011,Task,1,Merged to Release Branch,10002,Completed,true,Created after start
+50,SP-4814,Task,5,Done,10002,Completed,false,Planned
+51,SP-4876,Task,3,Merged to Release Branch,10002,Completed,false,Planned
