@@ -5,6 +5,7 @@ import requests
 from datetime import datetime, timedelta
 import json
 import base64
+import urllib.parse
 import plotly.express as px
 import plotly.graph_objects as go
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -39,8 +40,13 @@ def init_db():
             bugs_out INTEGER,
             completion_pct_total REAL,
             planned_pct REAL,
+            unplanned_pct REAL DEFAULT 0,
             planned_sp REAL DEFAULT 0,
             unplanned_sp REAL DEFAULT 0,
+            task_count_completed INTEGER DEFAULT 0,
+            task_count_incomplete INTEGER DEFAULT 0,
+            task_count_total INTEGER DEFAULT 0,
+            bugs_out_sp REAL DEFAULT 0, 
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -55,6 +61,26 @@ def init_db():
         pass
     try:
         c.execute('ALTER TABLE sprint_metrics ADD COLUMN sprint_name TEXT')
+    except:
+        pass
+    try:
+        c.execute('ALTER TABLE sprint_metrics ADD COLUMN unplanned_pct REAL DEFAULT 0')
+    except:
+        pass
+    try:
+        c.execute('ALTER TABLE sprint_metrics ADD COLUMN task_count_completed INTEGER DEFAULT 0')
+    except:
+        pass
+    try:
+        c.execute('ALTER TABLE sprint_metrics ADD COLUMN task_count_incomplete INTEGER DEFAULT 0')
+    except:
+        pass
+    try:
+        c.execute('ALTER TABLE sprint_metrics ADD COLUMN task_count_total INTEGER DEFAULT 0')
+    except:
+        pass
+    try:
+        c.execute('ALTER TABLE sprint_metrics ADD COLUMN bugs_out_sp REAL DEFAULT 0')
     except:
         pass
     # Table: app_config
@@ -119,8 +145,9 @@ def save_metrics(sprint_id, sprint_name, metrics):
         INSERT INTO sprint_metrics (
             sprint_id, sprint_name, velocity, completed_planned, completed_unplanned, 
             carryover_pct, bugs_in, bugs_out, completion_pct_total, planned_pct,
-            planned_sp, unplanned_sp
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            planned_sp, unplanned_sp, unplanned_pct,
+            task_count_completed, task_count_incomplete, task_count_total, bugs_out_sp
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(sprint_id) DO UPDATE SET
             sprint_name=excluded.sprint_name,
             velocity=excluded.velocity,
@@ -131,8 +158,13 @@ def save_metrics(sprint_id, sprint_name, metrics):
             bugs_out=excluded.bugs_out,
             completion_pct_total=excluded.completion_pct_total,
             planned_pct=excluded.planned_pct,
+            unplanned_pct=excluded.unplanned_pct,
             planned_sp=excluded.planned_sp,
-            unplanned_sp=excluded.unplanned_sp
+            unplanned_sp=excluded.unplanned_sp,
+            task_count_completed=excluded.task_count_completed,
+            task_count_incomplete=excluded.task_count_incomplete,
+            task_count_total=excluded.task_count_total,
+            bugs_out_sp=excluded.bugs_out_sp
     ''', (
         sprint_id,
         sprint_name,
@@ -145,7 +177,12 @@ def save_metrics(sprint_id, sprint_name, metrics):
         metrics['completion_pct_total'], 
         metrics['planned_pct'],
         metrics.get('planned_sp', 0),
-        metrics.get('unplanned_sp', 0)
+        metrics.get('unplanned_sp', 0),
+        metrics.get('unplanned_pct', 0.0),
+        metrics.get('task_count_completed', 0),
+        metrics.get('task_count_incomplete', 0),
+        metrics.get('task_count_total', 0),
+        metrics.get('bugs_out_sp', 0.0)
     ))
     conn.commit()
     conn.close()
@@ -435,6 +472,7 @@ def calculate_stats(sprint_info, issues, bugs_in_issues, planned_capacity, final
     all_sprint_tasks_count = 0
     completed_outside_count = 0
     bugs_out_count = 0
+    bugs_out_sp = 0.0
     
     completed_total_sp = 0.0
     sprint_start_sp = 0.0  # Total Planned SP
@@ -565,6 +603,7 @@ def calculate_stats(sprint_info, issues, bugs_in_issues, planned_capacity, final
             
         if is_completed_for_stats and issue_type.lower() == 'bug' and not is_completed_outside:
             bugs_out_count += 1
+            bugs_out_sp += story_points
             
         current_status_name = fields['status']['name']
         
@@ -594,10 +633,15 @@ def calculate_stats(sprint_info, issues, bugs_in_issues, planned_capacity, final
         "carryover_pct": carryover_pct,
         "bugs_in": len(bugs_in_issues),
         "bugs_out": bugs_out_count,
+        "bugs_out_sp": bugs_out_sp,
         "completion_pct_total": completion_pct_total,
         "planned_pct": planned_pct,
+        "unplanned_pct": (completed_unplanned / total_unplanned_sp * 100) if total_unplanned_sp > 0 else 0.0,
         "planned_sp": sprint_start_sp,
-        "unplanned_sp": total_unplanned_sp
+        "unplanned_sp": total_unplanned_sp,
+        "task_count_completed": all_sprint_tasks_count - incomplete_count,
+        "task_count_incomplete": incomplete_count,
+        "task_count_total": all_sprint_tasks_count
     }
     return metrics, debug_data
 
@@ -620,6 +664,7 @@ def calculate_sprint_metrics_fast(domain, sprint_id, sprint_name, auth, sp_field
         incomplete_count = 0
         all_sprint_tasks_count = 0
         bugs_out_count = 0
+        bugs_out_sp = 0.0
         completed_total_sp = 0.0
         sprint_start_sp = 0.0
         total_unplanned_sp = 0.0
@@ -668,6 +713,7 @@ def calculate_sprint_metrics_fast(domain, sprint_id, sprint_name, auth, sp_field
                 incomplete_count += 1
             if is_completed and issue_type.lower() == 'bug':
                 bugs_out_count += 1
+                bugs_out_sp += story_points
         
         velocity = completed_total_sp
         carryover_pct = (incomplete_count / all_sprint_tasks_count * 100) if all_sprint_tasks_count > 0 else 0.0
@@ -681,10 +727,15 @@ def calculate_sprint_metrics_fast(domain, sprint_id, sprint_name, auth, sp_field
             "carryover_pct": carryover_pct,
             "bugs_in": len(bugs_in_list) if bugs_in_list else 0,
             "bugs_out": bugs_out_count,
+            "bugs_out_sp": bugs_out_sp,
             "completion_pct_total": completion_pct_total,
             "planned_pct": planned_pct,
+            "unplanned_pct": (completed_unplanned / total_unplanned_sp * 100) if total_unplanned_sp > 0 else 0.0,
             "planned_sp": sprint_start_sp,
-            "unplanned_sp": total_unplanned_sp
+            "unplanned_sp": total_unplanned_sp,
+            "task_count_completed": all_sprint_tasks_count - incomplete_count,
+            "task_count_incomplete": incomplete_count,
+            "task_count_total": all_sprint_tasks_count
         }
     except Exception as e:
         print(f"Error calculating metrics for sprint {sprint_id} ({sprint_name}): {str(e)}")
@@ -772,6 +823,17 @@ with st.sidebar:
     board_id = st.text_input("Board ID", value=p_board_id)
     team_id = st.text_input("Team ID (UUID)", value=p_team_id)
     
+    # Webhook Config
+    env_webhook = ""
+    # Try to load from secrets if available
+    try:
+        env_webhook = st.secrets.get("WEBHOOK_URL", "")
+    except:
+        pass
+        
+    p_webhook = get_config("webhook_url", env_webhook)
+    webhook_url = st.text_input("Webhook URL (Google Apps Script)", value=p_webhook, type="password")
+    
     st.divider()
     st.header("Sprints")
     sprint_limit = st.number_input("Number of Sprints to Fetch", min_value=1, max_value=200, value=p_sprint_limit)
@@ -784,6 +846,7 @@ with st.sidebar:
             save_config("token", token)
             save_config("board_id", board_id)
             save_config("team_id", team_id)
+            save_config("webhook_url", webhook_url)
             save_config("sprint_limit", sprint_limit)
             
             auth = get_auth_header(email, token)
@@ -830,6 +893,44 @@ if 'sprints_map' in st.session_state:
             save_metrics(selected_sprint_id, selected_sprint_name, metrics)
             st.success("Metrics updated!")
 
+    if webhook_url:
+        st.write("### Export")
+        try:
+            df_all_ex = get_all_metrics()
+            if not df_all_ex.empty:
+                row_ex = df_all_ex[df_all_ex['sprint_id'] == selected_sprint_id]
+                if not row_ex.empty:
+                    met_ex = row_ex.iloc[0]
+                    
+                    payload = {
+                        "sprintName": met_ex.get('sprint_name', selected_sprint_name),
+                        "velocity": met_ex['velocity'],
+                        "completedPlanned": met_ex['completed_planned'],
+                        "completedUnplanned": met_ex['completed_unplanned'],
+                        "completedTasks": int(met_ex.get('task_count_completed', 0)), 
+                        "incompleteTasks": int(met_ex.get('task_count_incomplete', 0)),
+                        "carryover": met_ex['carryover_pct'],
+                        "plannedPct": met_ex['planned_pct'],
+                        "plannedCompletionPct": met_ex['planned_pct'],
+                        "unplannedCompletionPct": met_ex.get('unplanned_pct', 0),
+                        "totalCompletionPct": met_ex['completion_pct_total'],
+                        "taskCompletionPct": 100 - met_ex['carryover_pct'],
+                        "bugsIn": int(met_ex['bugs_in']),
+                        "bugsOut": int(met_ex['bugs_out']),
+                        "plannedSP": met_ex.get('planned_sp', 0.0),
+                        "unplannedSP": met_ex.get('unplanned_sp', 0.0)
+                    }
+                    
+                    json_str = json.dumps(payload)
+                    params = urllib.parse.quote(json_str)
+                    export_link = f"{webhook_url}?data={params}"
+                    
+                    st.link_button("Export to Google Sheets", export_link)
+                else:
+                    st.warning("Calculate metrics to enable export.")
+        except Exception as e:
+            st.error(f"Export prep failed: {e}")
+
     # Display Metrics
     df_all = get_all_metrics()
     current_metrics = df_all[df_all['sprint_id'] == selected_sprint_id]
@@ -853,13 +954,13 @@ if 'sprints_map' in st.session_state:
         m_c5.metric("Completed Planned", f"{met['completed_planned']:.1f}")
         m_c6.metric("Completed Unplanned", f"{met['completed_unplanned']:.1f}")
         m_c7.metric("Bugs In", int(met['bugs_in']))
-        m_c8.metric("Bugs Out", int(met['bugs_out']))
+        m_c8.metric("Bugs Out", f"{int(met['bugs_out'])} ({met.get('bugs_out_sp', 0.0):.1f} SP)")
         
         m_c9, m_c10, m_c11, m_c12 = st.columns(4)
         m_c9.metric("Planned %", f"{planned_pct_capacity:.1f}%")
         m_c10.metric("Carryover %", f"{met['carryover_pct']:.1f}%")
         # Leave placeholders or remove if not needed
-        m_c11.empty()
+        m_c11.metric("Unplanned Completion %", f"{met.get('unplanned_pct', 0.0):.1f}%")
         m_c12.empty()
 
     # Show persisted breakdown if available for current sprint
